@@ -118,9 +118,9 @@ using any ODE solver (Euler, Midpoint, RK4, or adaptive dopri5).
 
 The Variance Preserving (VP) path is defined via the noise schedule:
 
-$$\beta(s) = \beta_{\min} + s\,(\beta_{\max} - \beta_{\min}), \qquad \beta_{\min}=0.1,\; \beta_{\max}=20$$
+$$\beta(s) = \beta_{\min} + s (\beta_{\max} - \beta_{\min}), \qquad \beta_{\min}=0.1,  \beta_{\max}=20$$
 
-$$T(s) = \int_0^s \beta(r)\,dr = s\,\beta_{\min} + \tfrac{1}{2}s^2(\beta_{\max}-\beta_{\min})$$
+$$T(s) = \int_0^s \beta(r) dr = s \beta_{\min} + \tfrac{1}{2}s^2(\beta_{\max}-\beta_{\min})$$
 
 $$\alpha_s = e^{-\frac{1}{2}T(s)}$$
 
@@ -128,24 +128,24 @@ $$\alpha_s = e^{-\frac{1}{2}T(s)}$$
 
 Using the paper's noise→data convention ($t=0$ noise, $t=1$ data):
 
-$$\mu_t(x_1) = \alpha_{1-t} \, x_1, \qquad \sigma_t(x_1) = \sqrt{1 - \alpha_{1-t}^2}$$
+$$\mu_t(x_1) = \alpha_{1-t}   x_1, \qquad \sigma_t(x_1) = \sqrt{1 - \alpha_{1-t}^2}$$
 
-$$p_t(x|x_1) = \mathcal{N}\!\Big(x \;\Big|\; \alpha_{1-t}\,x_1,\; (1-\alpha_{1-t}^2)\,I\Big)$$
+$$p_t(x|x_1) = \mathcal{N} \Big(x  \Big|  \alpha_{1-t}\,x_1,  (1-\alpha_{1-t}^2) I\Big)$$
 
-At $t=0$: $\alpha_1 \approx 0$, so $\mu_0 \approx 0$, $\sigma_0 \approx 1$ (pure noise). ✓
-At $t=1$: $\alpha_0 = 1$, so $\mu_1 = x_1$, $\sigma_1 = 0$ (pure data). ✓
+At $t=0$: $\alpha_1 \approx 0$, so $\mu_0 \approx 0$, $\sigma_0 \approx 1$ (pure noise). 
+At $t=1$: $\alpha_0 = 1$, so $\mu_1 = x_1$, $\sigma_1 = 0$ (pure data). 
 
 ### Conditional Flow (Eq. 11)
 
-$$\psi_t(x_0) = \sigma_t(x_1)\,x_0 + \mu_t(x_1) = \sqrt{1-\alpha_{1-t}^2}\;x_0 + \alpha_{1-t}\,x_1$$
+$$\psi_t(x_0) = \sigma_t(x_1)\,x_0 + \mu_t(x_1) = \sqrt{1-\alpha_{1-t}^2} x_0 + \alpha_{1-t} x_1$$
 
 ### Conditional Vector Field (Eq. 19, from Theorem 3)
 
-$$u_t(x|x_1) = \frac{\sigma_t'(x_1)}{\sigma_t(x_1)}\,(x - \mu_t(x_1)) + \mu_t'(x_1)$$
+$$u_t(x|x_1) = \frac{\sigma_t'(x_1)}{\sigma_t(x_1)} (x - \mu_t(x_1)) + \mu_t'(x_1)$$
 
 Expanded using VP schedule (Eq. 19):
 
-$$u_t(x|x_1) = -\frac{T'(1-t)}{2}\left[\frac{e^{-T(1-t)}\,x - e^{-\frac{1}{2}T(1-t)}\,x_1}{1 - e^{-T(1-t)}}\right]$$
+$$u_t(x|x_1) = -\frac{T'(1-t)}{2}\left[\frac{e^{-T(1-t)} x - e^{-\frac{1}{2}T(1-t)} x_1}{1 - e^{-T(1-t)}}\right]$$
 
 where $T'(s) = \beta(s) = \beta_{\min} + s(\beta_{\max} - \beta_{\min})$.
 
