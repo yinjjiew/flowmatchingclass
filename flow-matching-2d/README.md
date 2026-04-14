@@ -236,17 +236,114 @@ Then solve the same ODE as the other methods.
 
 ---
 
-## Expected Outputs
+## Generated Figures — What Each Plot Shows
 
-Running `python main.py` generates these figures in `./outputs/`:
+Running `python main.py` produces **8 figures** in `./outputs/`. Below is a detailed guide to each one: what it visualizes, how it's computed, and what to look for.
 
-| Figure | Description | Paper Reference |
-|--------|-------------|-----------------|
-| `trajectories_comparison.png` | Side-by-side sampling trajectories for all 3 methods | Figure 4 (left) |
-| `density_evolution_*.png` | $p_t$ at $t=0, 1/3, 2/3, 1$ for each method | Figure 2 |
-| `nfe_comparison.png` | Sample quality vs NFE using Euler/Midpoint/RK4 | Figure 4 (right) |
-| `training_curves.png` | Training loss over iterations for all methods | — |
-| `samples_*.png` | Final generated samples for each method | — |
+---
+
+### 1. `figure4_left.png` — Density + Trajectory Overlay ⭐ (Paper Figure 4 left)
+
+**Layout**: rows = methods (SM-Dif, FM-Dif, FM-OT), columns = time steps $t \in \{0, 0.2, 0.4, 0.6, 0.8, 1.0\}$.
+
+**What it shows**: Each cell combines two layers:
+- **Background (density heatmap)**: a 2D histogram (`hist2d`, 120×120 bins, `inferno` colormap, log-scale) of all sample positions at time $t$. This approximates the marginal distribution $p_t(x)$.
+- **Foreground (trajectory lines)**: 150 randomly selected ODE trajectories drawn as colored line segments up to the current time. Color encodes time via viridis (purple=early → yellow=late). White dots mark current sample positions.
+
+**How it's computed**: We solve the learned ODE $d\phi_t/dt = v_t(\phi_t; \theta)$ from $t=0$ to $t=1$ using the midpoint solver with 200 steps, recording all 201 intermediate states. Each time column slices into this trajectory tensor at the corresponding index.
+
+**What to look for**:
+- **FM-OT reveals the checkerboard pattern much earlier** (~$t=0.4$) than diffusion methods, which remain a Gaussian blob until $t \geq 0.8$. This is the paper's central visual claim.
+- FM-OT trajectories are **straight lines**; diffusion trajectories are **curved** and may overshoot.
+- The density at $t=0$ should be identical across all methods (same standard Gaussian prior).
+
+---
+
+### 2. `figure4_right.png` — Low-NFE Sample Quality ⭐ (Paper Figure 4 right)
+
+**Layout**: rows = methods, columns = NFE values $\{4, 8, 10, 20\}$.
+
+**What it shows**: Scatter plots of generated samples at a fixed computational budget (NFE = number of neural network forward passes), using the midpoint ODE solver.
+
+**How it's computed**: Midpoint uses 2 function evaluations per step, so `n_steps = NFE // 2`. All methods start from the same shared noise $x_0 \sim \mathcal{N}(0, I)$ for fair comparison.
+
+**What to look for**:
+- **FM-OT at NFE=8** already shows clear checkerboard structure; diffusion methods are still blurry.
+- At **NFE=20**, FM-OT is nearly perfect; diffusion methods are still rough.
+- Straighter OT trajectories $\Rightarrow$ easier numerical integration $\Rightarrow$ fewer steps needed for good samples.
+
+---
+
+### 3. `density_evolution.png` — Extended Density Filmstrip (8 snapshots)
+
+**Layout**: rows = methods, columns = 8 time steps $t \in \{0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.0\}$.
+
+**What it shows**: Pure density heatmaps (no trajectory overlay) at finer time resolution than Figure 4 left. Same `hist2d` + log-scale technique.
+
+**How it's computed**: Same trajectory data, sliced at 8 evenly spaced time indices.
+
+**What to look for**: A smoother "filmstrip" of how $p_t$ evolves. Helps pinpoint the exact time when structure first appears for each method. FM-OT's linear interpolation path means structure emerges roughly proportional to $t$.
+
+---
+
+### 4. `trajectories_only.png` — Trajectory Geometry (supplementary)
+
+**Layout**: one panel per method, side by side.
+
+**What it shows**: 300 ODE sampling paths from noise to data, **without** density background. Line color = time (viridis), blue dots = start ($t=0$), red dots = end ($t=1$).
+
+**How it's computed**: Draws `LineCollection` segments for each trajectory, colored by time step.
+
+**What to look for**: The clearest view of path geometry. FM-OT paths are nearly parallel straight lines; diffusion paths curve, spread, and may cross each other. Diffusion trajectories sometimes "overshoot" and backtrack (Figure 3 in the paper).
+
+---
+
+### 5. `nfe_comparison.png` — Quantitative NFE Tradeoff Curves
+
+**Layout**: one subplot per method with 3 curves (Euler, Midpoint, RK4).
+
+**What it shows**: Sample quality ($y$-axis: fraction of samples in correct checkerboard cells) vs. NFE ($x$-axis) for three ODE solver families.
+
+**How it's computed**: For each `(method, solver, n_steps)` triple, generate 2048 samples and compute the quality metric. NFE = `n_steps × evals_per_step` (Euler: ×1, Midpoint: ×2, RK4: ×4).
+
+**Quality metric**: We divide $[-2, 2]^2$ into a $4 \times 4$ grid and count what fraction of generated samples land in "black" cells (those where `(row + col) % 2 == 0`). A perfect model scores 1.0. This is a 2D proxy for FID.
+
+**What to look for**: FM-OT dominates at every NFE budget. The gap is largest at low NFE ($\leq 20$). Higher-order solvers are more efficient per-NFE.
+
+---
+
+### 6. `training_curves.png` — Training Loss
+
+**What it shows**: Training loss vs. step for all 3 methods on log scale.
+
+**How it's computed**: Loss is recorded every 100 steps. Note: FM-OT/FM-Dif minimize CFM loss (Eq. 23/14); SM-Dif minimizes $\sigma_t^2$-weighted score matching loss (Eq. 42). Different loss scales are expected.
+
+**What to look for**: FM-OT typically converges fastest and smoothest (its target $x_1 - (1-\sigma_{\min})x_0$ has constant magnitude across $t$). SM-Dif may be noisier or higher in absolute value.
+
+---
+
+### 7. `samples_dopri5.png` — Best-Quality Samples (adaptive solver)
+
+**What it shows**: Scatter plots of samples using the dopri5 adaptive solver (`atol=rtol=1e-5`).
+
+**How it's computed**: `scipy.integrate.solve_ivp` with RK45 method. The solver adaptively chooses step sizes to keep integration error below tolerance.
+
+**What to look for**: These represent each model's **best achievable quality** (no solver error). Any imperfections (bleeding between cells, density non-uniformity, out-of-bounds points) are due to the model itself. Reports the average NFE used by the adaptive solver — FM-OT typically needs fewer.
+
+---
+
+### 8. `vector_fields.png` — Learned Vector Fields (cf. Paper Figure 2/8)
+
+**Layout**: rows = methods, columns = time steps ($t = 0, 1/3, 2/3$).
+
+**What it shows**: Quiver (arrow) plots of the learned velocity field $v_t(x; \theta)$ on a $25 \times 25$ grid. Arrow direction = flow direction; arrow color = magnitude (`coolwarm`: blue=small, red=large).
+
+**How it's computed**: Evaluate the neural network on a uniform grid of query points at each time $t$.
+
+**What to look for**:
+- FM-OT arrows maintain **consistent direction** across all time columns (the constant-direction property from Eq. 21).
+- Diffusion VFs show **dramatic direction changes** over time — the field does most of its "work" near $t=1$.
+- Magnitude contrast: FM-OT arrows have more uniform magnitude (constant speed), while diffusion arrows vary wildly.
 
 ---
 
@@ -281,6 +378,15 @@ flow-matching-2d/
 ├── samplers.py            # ODE solvers (Euler, Midpoint, RK4, dopri5)
 ├── visualize.py           # All plotting functions
 └── outputs/               # Generated figures (created at runtime)
+    ├── figure4_left.png       # ⭐ Paper Fig 4 left: density + trajectory overlay
+    ├── figure4_right.png      # ⭐ Paper Fig 4 right: low-NFE sample scatter
+    ├── density_evolution.png  # Extended density filmstrip (8 time steps)
+    ├── trajectories_only.png  # Trajectory-only view (no density background)
+    ├── nfe_comparison.png     # Quantitative NFE vs quality curves
+    ├── training_curves.png    # Training loss over iterations
+    ├── samples_dopri5.png     # Best-quality samples (adaptive solver)
+    ├── vector_fields.png      # Learned vector field quiver plots
+    └── checkpoint_*.pt        # Model checkpoints
 ```
 
 ---
