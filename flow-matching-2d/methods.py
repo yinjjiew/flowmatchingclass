@@ -234,5 +234,5 @@ class ScoreMatchingDiffusion:
         beta_s = _beta(s)
 
         score = model(x, t)
-        velocity = -0.5 * beta_s * (score - x)
+        velocity = 0.5 * beta_s * (x + score)
         return velocity
