@@ -66,7 +66,7 @@ $$\mu_t(x_1) = t \, x_1, \qquad \sigma_t(x_1) = 1 - (1 - \sigma_{\min}) t$$
 
 So the conditional distribution is:
 
-$$p_t(x | x_1) = \mathcal{N}\!\Big(x \;\Big|\; t \, x_1,\; \big[1 - (1-\sigma_{\min})t\big]^2 I\Big)$$
+$$p_t(x | x_1) = \mathcal{N} \Big(x \;\Big|\; t \, x_1,\; \big[1 - (1-\sigma_{\min})t\big]^2 I\Big)$$
 
 ### Conditional Flow (Eq. 22)
 
@@ -85,7 +85,7 @@ $$u_t(x | x_1) = \frac{x_1 - (1-\sigma_{\min})\,x}{1 - (1-\sigma_{\min})t}$$
 For training, we only need the target at the interpolated point $\psi_t(x_0)$.
 The CFM loss (Eq. 23) simplifies beautifully:
 
-$$\mathcal{L}_{\text{CFM}}(\theta) = \mathbb{E}_{t, q(x_1), p(x_0)} \Big\| v_t\!\big(\psi_t(x_0);\theta\big) - \big(x_1 - (1-\sigma_{\min})\,x_0\big) \Big\|^2$$
+$$\mathcal{L}_{\text{CFM}}(\theta) = \mathbb{E}_{t, q(x_1), p(x_0)} \Big\| v_t \big(\psi_t(x_0);\theta\big) - \big(x_1 - (1-\sigma_{\min})\,x_0\big) \Big\|^2$$
 
 **In code:**
 ```python
@@ -151,7 +151,7 @@ where $T'(s) = \beta(s) = \beta_{\min} + s(\beta_{\max} - \beta_{\min})$.
 
 ### Training Loss (CFM, Eq. 14)
 
-$$\mathcal{L}_{\text{CFM}}(\theta) = \mathbb{E}_{t, q(x_1), p(x_0)} \Big\| v_t\!\big(\psi_t(x_0);\theta\big) - \frac{d}{dt}\psi_t(x_0) \Big\|^2$$
+$$\mathcal{L}_{\text{CFM}}(\theta) = \mathbb{E}_{t, q(x_1), p(x_0)} \Big\| v_t \big(\psi_t(x_0);\theta\big) - \frac{d}{dt}\psi_t(x_0) \Big\|^2$$
 
 **In code:**
 ```python
@@ -200,7 +200,7 @@ $$\nabla_x \log p_t(x|x_1) = -\frac{x - \mu_t(x_1)}{\sigma_t(x_1)^2}$$
 
 ### Score Matching Loss (Eq. 42–43)
 
-$$\mathcal{L}_{\text{SM}}(\theta) = \mathbb{E}_{t, q(x_1), p_t(x|x_1)} \;\lambda(t)\;\Big\| s_t(x;\theta) - \nabla_x \log p_t(x|x_1) \Big\|^2$$
+$$\mathcal{L}_{\text{SM}}(\theta) = \mathbb{E}_{t, q(x_1), p_t(x|x_1)} \lambda(t) \Big\| s_t(x;\theta) - \nabla_x \log p_t(x|x_1) \Big\|^2$$
 
 with weighting $\lambda(t) = \sigma_t^2$ (the standard SM weighting from Song & Ermon, 2019).
 
