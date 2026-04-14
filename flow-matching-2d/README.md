@@ -93,7 +93,7 @@ t = uniform(0, 1)
 x0 = randn(...)                                          # noise
 x1 = sample_checkerboard(...)                             # data
 psi_t = (1 - (1 - sigma_min) * t) * x0 + t * x1          # interpolated point
-target = x1 - (1 - sigma_min) * x0                        # constant direction!
+target = x1 - (1 - sigma_min) * x0                        # constant direction
 loss = ||v_theta(psi_t, t) - target||^2
 ```
 
