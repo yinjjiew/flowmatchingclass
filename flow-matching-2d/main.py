@@ -26,6 +26,7 @@ from dataset import sample_checkerboard, sample_noise
 from methods import FlowMatchingOT, FlowMatchingDiffusion, ScoreMatchingDiffusion
 from samplers import euler_solve, midpoint_solve, rk4_solve, dopri5_solve
 from visualize import (
+    plot_figure4_left, plot_figure4_right,
     plot_trajectories, plot_density_evolution, plot_nfe_comparison,
     plot_training_curves, plot_samples, plot_vector_fields,
 )
@@ -199,14 +200,14 @@ def main():
 
     # 1. Training curves
     if len(all_loss_histories) > 0:
-        print("\n[1/6] Training curves...")
+        print("\n[1/8] Training curves...")
         plot_training_curves(
             all_loss_histories,
             os.path.join(args.output_dir, 'training_curves.png'),
         )
 
-    # 2. Trajectories (Figure 4 left)
-    print("\n[2/6] Sampling trajectories (Figure 4 left)...")
+    # 2. Trajectories (needed for Figure 4 left + density)
+    print("\n[2/8] Generating ODE trajectories...")
     trajectories = {}
     for key, (method, model, _) in trained.items():
         vel_fn = velocity_fns[method.name]
@@ -215,21 +216,40 @@ def main():
         trajectories[method.name] = traj
         print(f"  {method.name}: trajectory shape {traj.shape}")
 
+    # 3. Figure 4 left: density + trajectory overlay (THE key paper figure)
+    print("\n[3/8] Figure 4 (left): density + trajectory overlay...")
+    plot_figure4_left(
+        trajectories,
+        os.path.join(args.output_dir, 'figure4_left.png'),
+        n_traj=150,
+    )
+
+    # 4. Figure 4 right: low-NFE samples with midpoint solver
+    print("\n[4/8] Figure 4 (right): low-NFE sample scatter...")
+    plot_figure4_right(
+        velocity_fns,
+        os.path.join(args.output_dir, 'figure4_right.png'),
+        n_samples=args.n_eval_samples,
+        device='cpu',
+    )
+
+    # 5. Trajectory-only view (supplementary)
+    print("\n[5/8] Trajectory-only view...")
     plot_trajectories(
         trajectories,
-        os.path.join(args.output_dir, 'trajectories_comparison.png'),
+        os.path.join(args.output_dir, 'trajectories_only.png'),
         n_traj=300,
     )
 
-    # 3. Density evolution (Figure 2)
-    print("\n[3/6] Density evolution (Figure 2)...")
+    # 6. Density evolution with 8 time steps (extended filmstrip)
+    print("\n[6/8] Density evolution (8 time steps)...")
     plot_density_evolution(
         trajectories,
         os.path.join(args.output_dir, 'density_evolution.png'),
     )
 
-    # 4. Final samples with dopri5
-    print("\n[4/6] Final samples (dopri5)...")
+    # 7. Final samples with dopri5
+    print("\n[7/8] Final samples (dopri5)...")
     samples_dict = {}
     for key, (method, model, _) in trained.items():
         vel_fn = velocity_fns[method.name]
@@ -243,17 +263,8 @@ def main():
         os.path.join(args.output_dir, 'samples_dopri5.png'),
     )
 
-    # 5. NFE comparison (Figure 4 right)
-    print("\n[5/6] NFE comparison (Figure 4 right)...")
-    plot_nfe_comparison(
-        velocity_fns,
-        os.path.join(args.output_dir, 'nfe_comparison.png'),
-        n_samples=2048,
-        device='cpu',
-    )
-
-    # 6. Vector field visualization
-    print("\n[6/6] Vector field visualization...")
+    # 8. Vector field visualization
+    print("\n[8/8] Vector field visualization...")
     plot_vector_fields(
         velocity_fns,
         os.path.join(args.output_dir, 'vector_fields.png'),
